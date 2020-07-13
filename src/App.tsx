@@ -8,7 +8,8 @@ function App() {
 		{
 			name: FormUp.text(""),
 			email: FormUp.email(""),
-			dob: FormUp.date(""),
+      dob: FormUp.date(""),
+      faveColor: FormUp.select("")
 		},
 		{
 			validationSchema: Yup.object().shape({
@@ -26,6 +27,12 @@ function App() {
 					<FormUp.Input field={fields.name} />
 					<FormUp.Input field={fields.email} />
 					<FormUp.Input field={fields.dob} />
+          <FormUp.Select field={fields.faveColor}>
+            <option disabled value=""></option>
+            <option value="red">Red</option>
+            <option value="blue">Blue</option>
+            <option value="green">Green</option>
+          </FormUp.Select>
 					<button type="submit">Submit</button>
 				</FormUp.Form>
 			</div>
@@ -33,7 +40,7 @@ function App() {
       <button onClick={() => {fields.name.setTouched(!fields.name.touched)}}>Toggle name touched</button>
 			<div>
 				<p>
-					The name is {fields.name.value}. Email is {fields.email.value}
+					The name is {fields.name.value}. Email is {fields.email.value}. DoB is {fields.dob.value}. Favourite Color is {fields.faveColor.value}
 				</p>
 			</div>
 			<div>

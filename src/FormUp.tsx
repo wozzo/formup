@@ -26,6 +26,14 @@ export function date(initial: any): FieldDescriptor {
 		initial: initial,
 	}
 }
+
+export function select(initial: any): FieldDescriptor {
+	return {
+		type: "select",
+		initial: initial,
+	}
+}
+
 export type FormDescriptor<T> = {
 	[K in keyof T]: FieldDescriptor
 }
@@ -34,8 +42,8 @@ export type Field = {
 	name: string
 	type: string
 	value: any
-	onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-	onBlur: (e: React.FocusEvent<HTMLInputElement>) => void
+	onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void
+	onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => void
 	error?: string
 	touched: boolean
 	setValue: (value: any) => void | Promise<void>
@@ -73,7 +81,12 @@ const convertYupValidationError = (ex: Yup.ValidationError) =>
 		return all
 	}, {} as any)
 
-export function useFormUp<T>(formDescriptor: FormDescriptor<T>, options: FormOptions) {
+export type FormDefinition<T> = {
+	fields: Fields<T>
+	form: FormSettings
+}
+
+export function useFormUp<T>(formDescriptor: FormDescriptor<T>, options: FormOptions): FormDefinition<T> {
 	const [validationErrors, setValidationErrors] = useState({} as any)
 
 	const fieldNames = Object.keys(formDescriptor)
@@ -169,6 +182,46 @@ export function useFormUp<T>(formDescriptor: FormDescriptor<T>, options: FormOpt
 
 export interface InputProps extends React.HTMLAttributes<HTMLInputElement> {
 	field: Field
+}
+
+export interface SelectProps extends React.HTMLAttributes<HTMLSelectElement> {
+	field: Field
+}
+
+export function Select({field, ...props }: SelectProps) {
+	const onChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+		debugger
+		field.onChange(e)
+		if (props.onChange) {
+			props.onChange(e)
+		}
+	}
+
+	const onBlur = (e: React.FocusEvent<HTMLSelectElement>) => {
+		field.onBlur(e)
+		if (props.onBlur) {
+			props.onBlur(e)
+		}
+	}
+
+	const classes = props.className?.split(" ") || []
+	if (field.touched) {
+		classes.push("formup-touched")
+	}
+	if (field.error) {
+		classes.push("formup-error")
+	}
+
+	return (
+		<select
+			{...props}
+			name={field.name}
+			value={field.value}
+			className={classes.join(" ")}
+			onBlur={onBlur}
+			onChange={onChange}
+		/>
+	)
 }
 
 export function Input({ field, ...props }: InputProps) {
