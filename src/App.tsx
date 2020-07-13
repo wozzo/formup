@@ -1,24 +1,42 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import "./App.css";
+import * as FormUp from "./FormUp";
+import * as Yup from "yup"
 
 function App() {
+  const { fields, form, details } = FormUp.useFormUp({
+      name: FormUp.text(""),
+      email: FormUp.email(""),
+      dob: FormUp.date(""),
+    }, {
+      validationSchema: Yup.object().shape({
+        name: Yup.string().test('len', 'Must be exactly 5 characters', val => val.length === 5),
+        dob: Yup.date().required()
+      }),
+      onSubmit: (e) => console.log("Submitted"),
+    }
+  );
+
+  console.log(details.validationErrors)
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
+      <div>
+        <FormUp.Form form={form}>
+          <FormUp.Input field={fields.name} />
+          <FormUp.Input field={fields.email} />
+          <FormUp.Input field={fields.dob} />
+          <button type="submit">Submit</button>
+        </FormUp.Form>
+      </div>
+      <div>
         <p>
-          Edit <code>src/App.tsx</code> and save to reload.
+          The name is {fields.name.value}. Email is {fields.email.value}
         </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      </div>
+      <div>
+        <ul>
+        </ul>
+      </div>
     </div>
   );
 }
