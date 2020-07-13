@@ -4,7 +4,7 @@ import * as FormUp from "./FormUp";
 import * as Yup from "yup"
 
 function App() {
-  const { fields, form, details } = FormUp.useFormUp({
+  const { fields, form } = FormUp.useFormUp({
       name: FormUp.text(""),
       email: FormUp.email(""),
       dob: FormUp.date(""),
@@ -17,7 +17,6 @@ function App() {
     }
   );
 
-  console.log(details.validationErrors)
   return (
     <div className="App">
       <div>

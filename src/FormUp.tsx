@@ -35,9 +35,10 @@ export type Field = {
   name: string;
   type: string;
   value: any;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void | Promise<void>;
-  onFocus: (e: React.FocusEvent<HTMLInputElement>) => void | Promise<void>
-  className: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur: (e: React.FocusEvent<HTMLInputElement>) => void
+  error?: string
+  touched: boolean
 };
 
 export type Fields = {
@@ -65,13 +66,17 @@ export type FormDetails = {
   validationErrors: Yup.ValidationError | undefined;
 };
 
+const convertYupValidationError = (ex: Yup.ValidationError) => ex.inner.reduce((all, curr) => {
+  all[curr.path] = curr.message
+  return all
+}, {} as any)
+
 export function useFormUp(
   formDescriptor: FormDescriptor,
   options: FormOptions
 ) {
   const [validationErrors, setValidationErrors] = useState(
-    undefined as Yup.ValidationError | undefined
-  );
+    {} as any);
 
   const fieldNames = Object.keys(formDescriptor);
   const initialValues = fieldNames.reduce((all, currentFieldName) => {
@@ -103,19 +108,15 @@ export function useFormUp(
   const fields = fieldNames.reduce((all, currentFieldName) => {
     const currentFieldDescriptor = formDescriptor[currentFieldName];
 
-    const classes: string[] = []
-    if (touched[currentFieldName]) {
-        classes.push("formup-touched")
-    }
-
     all[currentFieldName] = {
       name: currentFieldName,
       type: currentFieldDescriptor.type,
       value: fieldValues[currentFieldName],
       onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
       dispatchFieldValueChange({ fieldName: currentFieldName, value: e.target.value }),
-      onFocus: (e: React.FocusEvent<HTMLInputElement>) => dispatchTouchedChange(currentFieldName),
-        className: classes.join(" ")
+      onBlur: (e: React.FocusEvent<HTMLInputElement>) => dispatchTouchedChange(currentFieldName),
+        error: validationErrors[currentFieldName],
+        touched: touched[currentFieldName]
     };
     return all;
   }, {} as Fields);
@@ -128,10 +129,12 @@ export function useFormUp(
         await options.validationSchema.validate(fieldValues, {
           abortEarly: false,
         });
-        setValidationErrors(undefined);
+        setValidationErrors({});
       } catch (ex) {
         const validationErrors = ex as Yup.ValidationError;
-        setValidationErrors(validationErrors);
+        const convertedErrors = convertYupValidationError(validationErrors)
+        setValidationErrors(convertedErrors);
+        return false
       }
     }
 
@@ -154,7 +157,29 @@ export interface InputProps extends React.HTMLAttributes<HTMLInputElement> {
 }
 
 export function Input({ field, ...props }: InputProps) {
-  return <input {...props} {...field} className={`${props.className} ${field.className}`} />;
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    field.onChange(e)
+    if (props.onChange) {
+      props.onChange(e)
+    }
+  }
+
+  const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    field.onBlur(e)
+    if (props.onBlur) {
+      props.onBlur(e)
+    }
+  }
+
+  const classes = props.className?.split(" ") || []
+  if (field.touched) {
+    classes.push("formup-touched")
+  }
+  if (field.error) {
+    classes.push("formup-error")
+  }
+
+  return <input {...props} type={field.type} name={field.name} value={field.value} className={classes.join(" ")} onBlur={onBlur} onChange={onChange} />;
 }
 
 export interface FormProps extends React.HTMLAttributes<HTMLFormElement> {

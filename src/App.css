@@ -36,3 +36,11 @@
     transform: rotate(360deg);
   }
 }
+
+.formup-touched {
+  background-color: #8fecab;
+}
+
+.formup-touched.formup-error {
+  background-color: #f07474;
+}
