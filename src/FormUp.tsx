@@ -42,8 +42,6 @@ export type Field = {
 	name: string
 	type: string
 	value: any
-	onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void
-	onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => void
 	error?: string
 	touched: boolean
 	setValue: (value: any) => void | Promise<void>
@@ -127,16 +125,6 @@ export function useFormUp<T>(formDescriptor: FormDescriptor<T>, options: FormOpt
 			name: currentFieldName,
 			type: currentFieldDescriptor.type,
 			value: fieldValues[currentFieldName],
-			onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-				dispatchFieldValueChange({
-					fieldName: currentFieldName,
-					value: e.target.value,
-				}),
-			onBlur: (e: React.FocusEvent<HTMLInputElement>) =>
-				dispatchTouchedChange({
-					fieldName: currentFieldName,
-					touched: true,
-				}),
 			error: validationErrors[currentFieldName],
 			touched: touched[currentFieldName],
 			setValue: (value: any) =>
@@ -190,15 +178,14 @@ export interface SelectProps extends React.HTMLAttributes<HTMLSelectElement> {
 
 export function Select({field, ...props }: SelectProps) {
 	const onChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-		debugger
-		field.onChange(e)
+		field.setValue(e.target.value)
 		if (props.onChange) {
 			props.onChange(e)
 		}
 	}
 
 	const onBlur = (e: React.FocusEvent<HTMLSelectElement>) => {
-		field.onBlur(e)
+		field.setTouched(true)
 		if (props.onBlur) {
 			props.onBlur(e)
 		}
@@ -226,14 +213,14 @@ export function Select({field, ...props }: SelectProps) {
 
 export function Input({ field, ...props }: InputProps) {
 	const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		field.onChange(e)
+		field.setValue(e.target.value)
 		if (props.onChange) {
 			props.onChange(e)
 		}
 	}
 
 	const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-		field.onBlur(e)
+		field.setTouched(true)
 		if (props.onBlur) {
 			props.onBlur(e)
 		}
