@@ -67,6 +67,7 @@ export type FormOptions = {
 }
 
 export type FormSettings = {
+	getValidationErrors: () => object
 	onSubmit: (e: React.FormEvent) => void | Promise<any>
 }
 export type FormDetails = {
@@ -81,8 +82,8 @@ const convertYupValidationError = (ex: Yup.ValidationError) =>
 
 export type FormDefinition<T> = {
 	fields: Fields<T>
-  form: FormSettings
-  errors: Array<string>
+	form: FormSettings
+	errors: Array<string>
 }
 
 export function useFormUp<T>(formDescriptor: FormDescriptor<T>, options: FormOptions): FormDefinition<T> {
@@ -142,23 +143,32 @@ export function useFormUp<T>(formDescriptor: FormDescriptor<T>, options: FormOpt
 		return all
 	}, {} as any) as Fields<T>
 
-	const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    Object.keys(fields).forEach(key => fields[key].setTouched(true))
+	const getValidationErrors = async () => {
+		if (!options.validationSchema) {
+			return {}
+		}
 
-		if (options.validationSchema) {
-			try {
-				await options.validationSchema.validate(fieldValues, {
-					abortEarly: false,
-				})
-				setValidationErrors({})
-			} catch (ex) {
-				const validationErrors = ex as Yup.ValidationError
-				const convertedErrors = convertYupValidationError(validationErrors)
-				setValidationErrors(convertedErrors)
-				return false
-			}
+		try {
+			await options.validationSchema.validate(fieldValues, {
+				abortEarly: false,
+			})
+			return {}
+		} catch (ex) {
+			const validationErrors = ex as Yup.ValidationError
+			const convertedErrors = convertYupValidationError(validationErrors)
+			return convertedErrors
+		}
+	}
+
+	const onSubmit = async (e: React.FormEvent) => {
+		e.preventDefault()
+
+		const validationErrors = await getValidationErrors()
+		setValidationErrors(validationErrors)
+		Object.keys(fields).forEach((key) => fields[key].setTouched(true))
+
+		if (Object.keys(validationErrors).length > 0) {
+			return false
 		}
 
 		return options.onSubmit(e)
@@ -166,12 +176,13 @@ export function useFormUp<T>(formDescriptor: FormDescriptor<T>, options: FormOpt
 
 	const form: FormSettings = {
 		onSubmit,
-  }
-  
-  const errors = Object.keys(validationErrors).reduce((all, curr) => {
-    all.push(validationErrors[curr])
-    return all
-  },[] as string[])
+		getValidationErrors,
+	}
+
+	const errors = Object.keys(validationErrors).reduce((all, curr) => {
+		all.push(validationErrors[curr])
+		return all
+	}, [] as string[])
 
 	return { fields, form, errors: [...errors] }
 }
@@ -260,5 +271,5 @@ export interface FormProps extends React.HTMLAttributes<HTMLFormElement> {
 }
 
 export function Form({ form, ...props }: FormProps) {
-	return <form {...props} {...form} />
+	return <form {...props} onSubmit={form.onSubmit} />
 }
